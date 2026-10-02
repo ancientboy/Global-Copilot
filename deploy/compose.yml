@@ -1,0 +1,71 @@
+name: global-copilot
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/strategy.Dockerfile
+    image: global-copilot:${COPILOT_REVISION:-local}
+    restart: unless-stopped
+    init: true
+    user: "1001:1001"
+    ports: ["127.0.0.1:3100:3100"]
+    environment:
+      APP_ORIGIN: https://strategy.zetaee.com
+      BASE_PATH: /english/
+      DATA_DIR: /data
+      MODEL_BRIDGE_DIR: /run/copilot-model
+    volumes:
+      - /opt/global-copilot/data:/data
+      - /opt/global-copilot/model-bridge:/run/copilot-model:ro
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+    mem_limit: 192m
+    cpus: 0.5
+    pids_limit: 64
+    logging:
+      driver: json-file
+      options: {max-size: '5m', max-file: '2'}
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3100/english/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      model:
+        condition: service_healthy
+  model:
+    build:
+      context: ..
+      dockerfile: deploy/model.Dockerfile
+      args:
+        STRATEGY_MODEL_IMAGE: ${STRATEGY_MODEL_IMAGE:?Set existing native provider image}
+    image: ${COPILOT_MODEL_IMAGE:?Set the existing workbench model image}
+    restart: unless-stopped
+    init: true
+    user: "1001:1001"
+    environment:
+      STEWARDOS_SHARED_MODEL: '1'
+      STEWARDOS_SHARED_MODEL_DIR: /run/shared-model
+      HERMES_HOME: /tmp/copilot-hermes
+      PYTHONPATH: /opt/stewardos
+      COPILOT_MODEL_DIR: /run/copilot-model
+    volumes:
+      - ${STRATEGY_SHARED_MODEL_DIR:?Set existing native shared account directory}:/run/shared-model
+      - /opt/global-copilot/model-bridge:/run/copilot-model
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/tmp:size=64m,mode=1777"]
+    mem_limit: 384m
+    cpus: 0.75
+    pids_limit: 64
+    logging:
+      driver: json-file
+      options: {max-size: '5m', max-file: '2'}
+    healthcheck:
+      test: [CMD, /opt/hermes/.venv/bin/python, -c, "import socket; s=socket.socket(socket.AF_UNIX); s.settimeout(3); s.connect('/run/copilot-model/model.sock'); s.close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

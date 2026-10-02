@@ -8,3 +8,5 @@ dist/
 private-data/
 *.sqlite
 *.sqlite-*
+__pycache__/
+*.pyc

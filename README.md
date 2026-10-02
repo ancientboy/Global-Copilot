@@ -2,6 +2,8 @@
 
 A mobile-first English practice workspace for overseas life, social conversations and business. Four main views: Practice, Scenarios, Review and Growth. The earlier Meeting Prep, Quick English, professional library and learning history remain available under professional tools.
 
+The existing strategy-server workbench uses the owner's **shared GPT account**, via the dedicated `MODEL_SERVICE` bridge and `gpt-5.6-sol`. It does not need an API key or another login. Use [the shared-account deployment profile](docs/STRATEGY-SHARED-ACCOUNT.md) for updates to `/english/`; it preserves the current login and learning data.
+
 ## Implemented
 
 - Guided coaching, free conversation and in-character simulation; 5/15/30–45 minute intentions.
@@ -31,7 +33,7 @@ See [V2 plan](docs/V2-PLAN.md), [private-server deployment](docs/SELF-HOST.md) a
 
 ## Important release boundaries
 
-The Sites edition continues to use the user-configured OpenAI/DeepSeek API. Signing into the Site does not authorize model inference through a ChatGPT subscription. The optional server adapter supports that separate authorization flow, but it is not deployed to a user server yet. The owner must complete official authorization and test account availability/limits.
+The Sites edition continues to use the user-configured OpenAI/DeepSeek API. Signing into the Site does not authorize model inference through a ChatGPT subscription. The existing strategy-server profile instead reuses its already-authorized dedicated GPT service. The optional standalone server has a separate device-code authorization flow; that flow is not required for the existing shared-account deployment.
 
 Automated tests use controlled model responses, not paid live inference. A real Codex 0.160.0 process completed initialization/account-read in an isolated empty home; no user account was connected. Physical phone microphone/playback and sustained conversation still require device validation. The current environment does not provide the required managed browser-control skill, so no rendered browser/visual QA is claimed.
 
