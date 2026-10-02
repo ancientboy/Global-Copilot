@@ -35,6 +35,7 @@ test('shared account takes precedence and completes V2 practice without an API k
   assert.match(calls[0][1].content,/A coffee, please/);
   const connection=await (await call('test-ai','POST')).json();
   assert.equal(connection.provider,'strategy');assert.equal(connection.model,'gpt-5.6-sol');
+  assert.ok(calls[1].some(message=>message.role==='system'&&message.content.trim()),'Native model service requires a nonempty system prompt for the connection test');
   assert.equal(env.DB.sqlite.prepare('SELECT COUNT(*) AS n FROM ai_credentials').get().n,0);
 });
 test('shared account failure stays in shared mode and never falls back to another provider',async t=>{
