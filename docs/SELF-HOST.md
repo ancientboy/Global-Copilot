@@ -1,5 +1,7 @@
 # Private server deployment
 
+For the existing strategy-server `/english/` workbench, use [the shared GPT account profile](STRATEGY-SHARED-ACCOUNT.md). Do not replace its login, database, or model container using the standalone setup below.
+
 This is an optional single-owner runtime, separate from the current Sites publication. The implementation supports a private workspace password and a dedicated Codex App Server home. Do not reuse a trading server's existing Codex credentials or expose its home directory.
 
 Requirements: Docker Compose, a TLS domain/reverse proxy, outbound access for Codex login/inference. Container port 3000 binds only to host loopback. Configure the reverse proxy to the exact APP_ORIGIN; preserve the browser Origin header. No current server or domain has been provided, so this deployment and real account inference are not verified.
