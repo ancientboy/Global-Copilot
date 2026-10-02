@@ -10,6 +10,7 @@ The existing strategy-server workbench uses the owner's **shared GPT account**, 
 - 36 curated scenes, 288 scene vocabulary items, 144 sentence patterns; 304 distinct words including the existing professional library.
 - Separate contextual coach help: misunderstanding, slower playback, keywords → sentence frame → full example, Chinese intent and natural phrasing.
 - Browser speech recognition, editable transcript, speech synthesis, speed, pause/continue/stop, subtitles, and text fallback. No audio-based pronunciation score.
+- On-demand Chinese meaning for each conversation message, including saved complete conversations. Translations retain the English original, are cached with their source text, and survive reloads; viewing them during active practice records assistance.
 - Per-session cloud persistence after every submitted learner turn, before requesting the reply. Resume unfinished conversations after reload; retry a failed reply without duplicating the learner message.
 - Grounded debrief: exact original, issue, minimal correction, natural/polished wording, practice reminder, next focus and review cards.
 - Active listen/recognize/say/transfer review with 1/3/7/14/30-day scheduling. Saved items are not marked mastered automatically.

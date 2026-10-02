@@ -37,3 +37,55 @@ for (const runtimeFailure of [false,true]) {
   }finally{c.dom.window.close();env.DB.sqlite.close()}
  });
 }
+
+test('sentence translations expand, collapse, retry and persist across reload without another model call',async()=>{
+ let translationCalls=0,fail=true,release;
+ const env={DB:database(),MODEL_SERVICE:{model:'gpt-5.6-sol',status:async()=>({configured:true,managed:true}),complete:async messages=>{
+  const {task,input}=JSON.parse(messages[1].content);
+  if(task==='tutor')return {reply:'Would you like it to go?',hint:'',phrases:[]};
+  if(task==='translate_zh'){translationCalls++;assert.equal(input.text,'Would you like it to go?');if(fail)throw Object.assign(new Error('暂时无法翻译'),{status:503});await new Promise(resolve=>release=resolve);return {translation:'您要打包带走吗？'}}
+  throw new Error('Unexpected task '+task);
+ }}};
+ const stored=()=>JSON.parse(env.DB.sqlite.prepare("SELECT payload FROM practice_records WHERE kind='session'").get().payload);
+ let c=client(env);
+ try{
+  await wait(()=>c.button('开始带我练')&&!c.button('开始带我练').disabled);c.button('开始带我练').click();
+  await wait(()=>c.button('查看中文')&&!c.button('查看中文').disabled);
+  assert.ok(c.text().includes('Would you like it to go?'));assert.ok(!c.text().includes('您要打包带走吗？'));
+  c.button('查看中文').click();await wait(()=>c.button('重试翻译')&&!c.button('重试翻译').disabled);
+  assert.equal(stored().assisted,false);assert.equal(stored().messages[0].translationZh,undefined);
+  fail=false;c.button('重试翻译').click();await wait(()=>release);
+  assert.equal(c.button('正在翻译…').disabled,true);assert.equal(translationCalls,2);release();
+  await wait(()=>c.button('收起中文'));
+  assert.equal(c.w.document.querySelector('.messageTranslation').hidden,false);
+  assert.equal(c.w.document.querySelector('.messageTranslation p').textContent,'您要打包带走吗？');
+  assert.equal(stored().assisted,true);assert.equal(stored().messages[0].translationSource,'Would you like it to go?');
+  c.button('收起中文').click();await wait(()=>c.button('查看中文'));assert.equal(c.w.document.querySelector('.messageTranslation').hidden,true);
+  c.button('查看中文').click();await wait(()=>c.button('收起中文'));assert.equal(translationCalls,2);
+  c.dom.window.close();c=client(env);await wait(()=>c.text().includes('接着上次聊'));
+  c.w.document.querySelector('button.listRow').click();await wait(()=>c.button('查看中文')&&!c.button('查看中文').disabled);
+  c.button('查看中文').click();await wait(()=>c.button('收起中文'));assert.equal(translationCalls,2);
+  assert.equal(c.w.document.querySelector('.messageTranslation p').textContent,'您要打包带走吗？');
+  assert.ok(c.button('再听一遍'));assert.equal(c.errors.length,0);
+ }finally{c.dom.window.close();env.DB.sqlite.close()}
+});
+
+test('completed conversations support Chinese meaning without changing their assessment',async()=>{
+ const original={id:'completed',sceneId:'restaurant',scene:'餐厅点餐',track:'life',stage:1,goal:'Order a drink',mode:'simulation',role:'Waiter',status:'complete',assisted:false,finishedAt:new Date().toISOString(),messages:[{id:'a',role:'assistant',content:'Anything else?'},{id:'u',role:'user',content:'That is all, thank you.'}],feedback:{summary:'Done',items:[],nextFocus:[],passed:true,reason:'Independent response'}};
+ const env={DB:database(),MODEL_SERVICE:{model:'gpt-5.6-sol',status:async()=>({configured:true,managed:true}),complete:async messages=>{
+  const {task,input}=JSON.parse(messages[1].content);assert.equal(task,'translate_zh');assert.equal(input.text,'That is all, thank you.');return {translation:'就这些，谢谢。'};
+ }}};
+ await env.DB.prepare('INSERT INTO practice_records VALUES (?,?,?,?,?,?)').bind('ui-owner','session',original.id,JSON.stringify(original),1,new Date().toISOString()).run();
+ const c=client(env);
+ try{
+  await wait(()=>c.button('开始带我练')&&!c.button('开始带我练').disabled);c.button('成长').click();
+  await wait(()=>c.w.document.querySelector('button.listRow'));c.w.document.querySelector('button.listRow').click();
+  await wait(()=>c.text().includes('查看完整对话'));
+  const details=[...c.w.document.querySelectorAll('details')].find(d=>d.querySelector('summary')?.textContent==='查看完整对话');details.open=true;
+  const turn=details.querySelector('.turn.user');turn.querySelector('.translationButton').click();
+  await wait(()=>turn.querySelector('.messageTranslation')?.hidden===false);
+  assert.equal(turn.querySelector('.messageTranslation p').textContent,'就这些，谢谢。');
+  const saved=JSON.parse(env.DB.sqlite.prepare("SELECT payload FROM practice_records WHERE id='completed'").get().payload);
+  assert.equal(saved.assisted,false);assert.deepEqual(saved.feedback,original.feedback);assert.equal(c.errors.length,0);
+ }finally{c.dom.window.close();env.DB.sqlite.close()}
+});
