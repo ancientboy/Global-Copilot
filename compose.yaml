@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    env_file: .env
+    ports:
+      - '127.0.0.1:3000:3000'
+    volumes:
+      - copilot-data:/data
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  copilot-data:

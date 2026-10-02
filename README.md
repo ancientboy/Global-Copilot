@@ -1,35 +1,38 @@
-# Global Business English Copilot
+# Global Copilot V2
 
-海外商务英语工作台。方案 2 的双栏会议布局、方案 1 的浅色灰白与墨绿配色；默认 Today，支持暗色和手机布局。
+A mobile-first English practice workspace for overseas life, social conversations and business. Four main views: Practice, Scenarios, Review and Growth. The earlier Meeting Prep, Quick English, professional library and learning history remain available under professional tools.
 
-## 使用
+## Implemented
 
-打开已发布的私有 Sites，使用所属 ChatGPT 账号登录。在 AI 设置选择 OpenAI 或 DeepSeek，填写 API Key，安全保存并测试连接。无需 OpenAI Developers 插件。补充公司真实事实、训练目标后开始练习。API 服务费用由自己的服务商账户承担。
+- Guided coaching, free conversation and in-character simulation; 5/15/30–45 minute intentions.
+- 36 curated scenes, 288 scene vocabulary items, 144 sentence patterns; 304 distinct words including the existing professional library.
+- Separate contextual coach help: misunderstanding, slower playback, keywords → sentence frame → full example, Chinese intent and natural phrasing.
+- Browser speech recognition, editable transcript, speech synthesis, speed, pause/continue/stop, subtitles, and text fallback. No audio-based pronunciation score.
+- Per-session cloud persistence after every submitted learner turn, before requesting the reply. Resume unfinished conversations after reload; retry a failed reply without duplicating the learner message.
+- Grounded debrief: exact original, issue, minimal correction, natural/polished wording, practice reminder, next focus and review cards.
+- Active listen/recognize/say/transfer review with 1/3/7/14/30-day scheduling. Saved items are not marked mastered automatically.
+- Six ability stages with separate life/social/business tracks. Two independent contexts plus a delayed retest are required; hints and restored sessions do not create independent evidence. Course completion is shown separately.
+- Adaptive request context from weak vocabulary, real errors, prior feedback and demonstrated level.
+- User-isolated D1 records with optimistic concurrency, pagination, encrypted API credentials and private Site access.
+- Export V2 and legacy data; import V2 sessions/cards without replacing existing IDs, merge saved expressions. Imported records cannot fabricate verified progress.
+- Optional single-owner Node/SQLite server with private workspace login and Codex device-code authorization adapter, Docker recipe and backup instructions.
 
-## 功能
+## Run and validate
 
-- Today：30/35/45 分钟，10 个行业词、5 个表达、场景口语与听力复述、昨日薄弱项、当日复盘。AI 根据近期会议、错题、词汇状态及已有表现生成每日计划并保存。
-- Meeting Prep：保存多场会议，生成 brief、双方各 10 个问题、词汇、30 秒开场、1 分钟公司介绍、3 分钟项目介绍、异议回应、谈判、closing 和 next steps；用实际笔记做会后复盘、提取错误、准备跟进邮件。
-- Role Play：8 个角色、18 个场景，真实模型多轮回应；文本依据的复盘、自然/高级说法、类似句型、下一次练习目标和有原话证据的能力记录。
-- Quick English：任意中文商务意图的 Easy / Natural / Executive 三层表达、情境、关键词、收藏。
-- Vocabulary：22 个领域的种子词条，每日生成的新词持续入库，均提供简单解释、行业解释、搭配、商务例句、会议用法；三种掌握状态。
-- Mistakes：真实错误提取及手动记录、复习，成功递进到 3/7/14/30 天，未掌握回到 1 天。
-- Progress：今日完成数、连续天数、本周对练、词汇、错误分布、四个领域能力证据、听力薄弱项、个人表达和历史；JSON 导出。
-- Overseas Survival：12 种场景与实用短语，可朗读或进入 AI 对练。
-- 全局 AI 输入、浏览器朗读和语音转文字。语音可用性取决于浏览器与权限；无音素/口音评分，不将转录当作实际发音评估。
+`npm ci`
 
-## 架构与数据
+`npm run build`
 
-React + Vite 前端，Cloudflare Worker 服务端，Sites D1。每个请求从平台认证头取得身份，按用户隔离。学习状态通过修订号防止多设备静默覆盖；冲突时先导出再加载。数据保留在云端，浏览器 localStorage 仅主题及可选旧版迁移。当前打开的未完成对话草稿未自动保存，结束复盘后持久化。
+`npm test`
 
-API Key 使用 AES-GCM 加密并绑定用户，密钥只在服务端解密，前端不能取回。主密钥为 Sites 的 AI_ENCRYPTION_KEY secret；不要重新生成，否则旧凭据需要重新输入。
+`npm run dev` serves the frontend; real protected API routes require Sites or the private server. Vite alone does not supply fake learning data or fake AI. Deployment packaging remains `npm run build`, emitting `dist/client`, `dist/server/index.js` and migration metadata.
 
-AI 使用固定服务商地址，逐任务 JSON 验证、原话检查、超时、限流、可读错误。API 请求携带完成任务所需的输入、公司资料和近期学习上下文。没有联网公司调查能力，未知商业事实使用占位并要求补充。
+See [V2 plan](docs/V2-PLAN.md), [private-server deployment](docs/SELF-HOST.md) and [release verification](docs/RELEASE-V2.md).
 
-生产迁移由 db/schema.ts / Drizzle 管理，打包到 dist/.openai/drizzle。已应用迁移不可改写。
+## Important release boundaries
 
-## 开发与验证
+The Sites edition continues to use the user-configured OpenAI/DeepSeek API. Signing into the Site does not authorize model inference through a ChatGPT subscription. The optional server adapter supports that separate authorization flow, but it is not deployed to a user server yet. The owner must complete official authorization and test account availability/limits.
 
-Node 24，npm install；npm run build；npm run test:sites。测试的模型回答使用受控桩，覆盖 API 请求及验证，不能等同于真实提供商验收。真实密钥尚未由用户连接，因此上线后需在 AI 设置测试一次。
+Automated tests use controlled model responses, not paid live inference. A real Codex 0.160.0 process completed initialization/account-read in an isolated empty home; no user account was connected. Physical phone microphone/playback and sustained conversation still require device validation. The current environment does not provide the required managed browser-control skill, so no rendered browser/visual QA is claimed.
 
-当前环境缺少浏览器控制能力，本次新增功能没有完成浏览器端到端复测；旧版布局已有桌面/手机视觉检查。生产构建、SQLite 迁移、身份隔离、保存冲突、加密、API 错误与输出验证均自动测试。
+All previously deployed Drizzle migrations are preserved. New V2 migrations add normalized records and a unique owner/kind/id key without replacing the legacy learning document.
